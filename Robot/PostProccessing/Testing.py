@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from math import tan, pi
 import time
 
-room = np.loadtxt("from mac/Robot/SavedRoom.txt")
+room = np.loadtxt("Robot/SavedRoom.txt")
 room = np.rot90(room)
 room[np.where(room==2)] = 0
 
@@ -64,39 +64,70 @@ def island_count(mat):
                 h = count_houses(mat, visited, i, j)
                 houses.append(h)
     return houses
+    
 
-
-def check_diag(i,j):
-    for ang in range(0,89,5):
-        x = 1
-        y = 0
-        lastY = 0
-        first = True
+                        
+def check_diag(i,j, ang):
+    lines = np.zeros((300,300))
+   
+    if ang == 90:
+        lines[0:i,j] = True
+        lines[i:len(room),j] = True
+        return lines
+    if ang > 90:
+        ang = 90-(ang-90)
+        rond = 2
+        signY = 1
+        signX = 1
+    else:
+        rond = 0
         signY = -1
         signX = 1
-        while True:
-            y = int(round(tan(ang*pi/180)*x,0))
-            if i+y*signY < len(room) and i+y*signY >= 0 and j+x*signX < len(room[0]) and j+x*signX >= 0:
-                if abs(y-lastY) > 1:
+
+    x = 1
+    y = 0
+    lastY = 0
+        
+    while True:
+        y = int(round(tan(ang*pi/180)*x,0))
+        if i+y*signY < len(room) and i+y*signY >= 0 and j+x*signX < len(room[0]) and j+x*signX >= 0:
+            
+            if abs(y-lastY) > 1:
+                if rond == 0 or rond == 1:
                     if signX > 0:
-                        room[i+y*signY:i+lastY*signY,j+signX*(x-1)] = 2
+                        lines[i+y*signY:i+lastY*signY,j+signX*(x-1)] = True
                     else:
-                        room[i+lastY*signY:i+y*signY,j+signX*(x-1)] = 2
-                    print(lastY*signY,y*signY,signX*(x-1))
+                        lines[i+lastY*signY:i+y*signY,j+signX*(x-1)] = True
                 else:
-                    room[i+y*signY,j+x*signX] = 2
-                x += 1
-                lastY = y
+                    if signX > 0:
+                        lines[i+lastY*signY:i+y*signY,j+signX*(x-1)] = True
+                        
+                    else:
+                        lines[i+y*signY:i+lastY*signY,j+signX*(x-1)] = True
+
             else:
-                if first:
-                    first = False
-                    x = 0
-                    lastY = 0
-                    signY = -signY
-                    signX = -signX
-                else:
-                    break
-    #return count
+                lines[i+y*signY,j+x*signX] = True
+            x += 1
+            lastY = y
+        else:
+            if rond == 0:
+                rond += 1
+                x = 0
+                lastY = 0
+                signY = -signY
+                signX = -signX
+            elif rond == 1:
+                break
+            elif rond == 2:
+                signY = -signY
+                signX = -signX
+                x = 0
+                lastY = 0
+                rond += 1
+            elif rond == 3:
+                break
+
+    return lines
 
 
 
@@ -119,16 +150,71 @@ for i in range(len(room)):
             checked[i][j] is True or room[i][j] == 0:
             continue
 
-check_diag(237,150)
+
+
+for r in range(len(room)):
+    for c in range(len(room[0])):
+        if room[r,c] == 1:
+
+            for ang in range(0,180,5):
+                array = check_diag(r,c, ang)
+                Y = list(np.where(array==True)[0])
+                X = list(np.where(array==True)[1])
+                Ynmr = Y.count(r)
+                Xnmr = X.count(c)
+
+                count = 0
+                counter = 0
+
+                if Ynmr <= Xnmr:
+                    index = Y.index(r)
+                else:
+                    index = X.index(c)
+
+
+
+                for i in range(index, len(Y)):
+                    if room[Y[i],X[i]] == 1:
+                        count += 1
+                        counter = 0
+                    else:
+                        counter += 1
+                        count += 1
+                        if counter > 9:
+                            count -= counter
+                            counter = 0
+                            break
+                count -= counter
+                counter = 0
+                for i in range(index, 0, -1):
+                    if room[Y[i],X[i]] == 1:
+                        count += 1
+                        counter = 0
+                    else:
+                        counter += 1
+                        count += 1
+                        if counter > 9:
+                            count -= counter
+                            counter = 0
+                            break
+                count -= counter
+
+                print(ang, count)
+            print(r,c)
+            break
+    if room[r,c] == 1:
+        break
+
+
+
+#print(room[np.where(array==True)])
 
 
 
 
-room[237,150] = 2
 
-
-print(time.time()-start)
-
+#print(time.time()-start)
+#room[np.where(array==True)] = 2
 plt.imshow(room)
 
 plt.show()
